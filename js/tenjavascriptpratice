@@ -59,4 +59,4 @@ JavaScript 綜合練習題 (1-10)
 
 目標： 寫一個函式，接收一段「學生資料的 JSON 字串」（包含多筆學生的姓名與分數）。在函式內將其解析成陣列後，計算出所有及格學生（分數大於等於 60）的平均分數並回傳。如果沒有任何人及格，則回傳 0。
 
-運用概念： function, JSON, Array, Object, for (或 while), if   
+運用概念： function, JSON, Array, Object, for (或 while), if 
