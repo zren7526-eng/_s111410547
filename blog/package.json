@@ -1,0 +1,20 @@
+{
+  "name": "simple-blog",
+  "version": "1.0.0",
+  "description": "A simple blog system with Node.js and SQLite",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dompurify": "^3.3.3",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "highlight.js": "^11.11.1",
+    "jsdom": "^29.0.1",
+    "marked": "^17.0.5",
+    "sql.js": "^1.10.2"
+  }
+}

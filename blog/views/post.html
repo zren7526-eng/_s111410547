@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= post.title %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="/" class="logo">My Blog</a>
+      <nav>
+        <a href="/">回首頁</a>
+        <% if (userId) { %>
+          <a href="/admin">後台</a>
+          <a href="/logout">登出</a>
+        <% } else { %>
+          <a href="/login">登入</a>
+        <% } %>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <article class="post-page">
+      <% if (post.cover_image) { %>
+        <img src="<%= post.cover_image %>" alt="<%= post.title %>" class="cover-img">
+      <% } %>
+      <div class="content">
+        <h1><%= post.title %></h1>
+        <div class="meta">
+          <span><%= new Date(post.created_at).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' }) %></span>
+          <% if (post.username) { %>
+            <span>by <%= post.username %></span>
+          <% } %>
+        </div>
+        <% if (post.tagsList && post.tagsList.length > 0) { %>
+          <div class="tags">
+            <% post.tagsList.forEach(tag => { %>
+              <a href="/?tag=<%= encodeURIComponent(tag) %>" class="tag"><%= tag %></a>
+            <% }) %>
+          </div>
+        <% } %>
+        <div class="post-body">
+          <%- post.html %>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; <%= new Date().getFullYear() %> My Blog. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
+    document.querySelectorAll('pre code').forEach(block => {
+      hljs.highlightElement(block);
+    });
+  </script>
+</body>
+</html>
