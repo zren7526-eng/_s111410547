@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Blog</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="/" class="logo">My Blog</a>
+      <nav>
+        <% if (userId) { %>
+          <a href="/admin">後台</a>
+          <a href="/logout">登出</a>
+        <% } else { %>
+          <a href="/login">登入</a>
+        <% } %>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <% if (tags && tags.length > 0) { %>
+      <div class="tags-filter">
+        <a href="/" class="tag <%= !selectedTag ? 'active' : '' %>">全部</a>
+        <% tags.forEach(tag => { %>
+          <a href="/?tag=<%= encodeURIComponent(tag) %>" class="tag <%= selectedTag === tag ? 'active' : '' %>"><%= tag %></a>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <% if (posts.length === 0) { %>
+      <div class="empty-state">
+        <h2>尚無文章</h2>
+        <p>沒有找到任何已發布的文章</p>
+      </div>
+    <% } else { %>
+      <div class="posts-grid">
+        <% posts.forEach((post, index) => { %>
+          <article class="post-card <%= post.cover_image ? 'cover-image' : '' %>" style="animation-delay: <%= index * 0.05 %>s">
+            <% if (post.cover_image) { %>
+              <img src="<%= post.cover_image %>" alt="<%= post.title %>" class="cover-img">
+            <% } %>
+            <div class="post-content">
+              <div class="post-meta">
+                <span><%= new Date(post.created_at).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' }) %></span>
+                <% if (post.username) { %>
+                  <span>by <%= post.username %></span>
+                <% } %>
+              </div>
+              <h2 class="post-title">
+                <a href="/post/<%= post.slug || post.id %>"><%= post.title %></a>
+              </h2>
+              <p class="post-excerpt"><%= post.excerpt %></p>
+              <% if (post.tags) { %>
+                <div class="post-tags">
+                  <% post.tags.split(',').map(t => t.trim()).filter(t => t).forEach(tag => { %>
+                    <span class="post-tag"><%= tag %></span>
+                  <% }) %>
+                </div>
+              <% } %>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    <% } %>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; <%= new Date().getFullYear() %> My Blog. All rights reserved.</p>
+    </div>
+  </footer>
+</body>
+</html>
