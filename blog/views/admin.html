@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>後台管理 - My Blog</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="/" class="logo">My Blog</a>
+      <nav>
+        <a href="/">前台</a>
+        <a href="/admin/new">新文章</a>
+        <a href="/logout">登出</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="admin-header">
+      <h1>文章管理</h1>
+      <a href="/admin/new" class="btn btn-primary">新增文章</a>
+    </div>
+
+    <% if (posts.length === 0) { %>
+      <div class="empty-state">
+        <h2>尚無文章</h2>
+        <p>點擊上方按鈕創建第一篇文章</p>
+      </div>
+    <% } else { %>
+      <div class="admin-table">
+        <table>
+          <thead>
+            <tr>
+              <th>標題</th>
+              <th>狀態</th>
+              <th>建立日期</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% posts.forEach(post => { %>
+              <tr>
+              <td>
+                <a href="/post/<%= post.slug || post.id %>" target="_blank" style="color: var(--text); text-decoration: none; font-weight: 500;"><%= post.title %></a>
+                <% if (post.slug) { %>
+                  <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">/<%= post.slug %></div>
+                <% } %>
+              </td>
+                <td>
+                  <span class="status-badge status-<%= post.status %>"><%= post.status === 'published' ? '已發布' : '草稿' %></span>
+                </td>
+                <td><%= new Date(post.created_at).toLocaleDateString('zh-TW') %></td>
+                <td>
+                  <div class="actions">
+                    <a href="/admin/edit/<%= post.id %>" class="btn btn-secondary btn-sm">編輯</a>
+                    <% if (post.status === 'draft') { %>
+                      <form action="/admin/publish/<%= post.id %>" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-primary btn-sm">發布</button>
+                      </form>
+                    <% } else { %>
+                      <form action="/admin/draft/<%= post.id %>" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-secondary btn-sm">設為草稿</button>
+                      </form>
+                    <% } %>
+                    <form action="/admin/delete/<%= post.id %>" method="POST" style="display: inline;" onsubmit="return confirm('確定要刪除這篇文章嗎？')">
+                      <button type="submit" class="btn btn-danger btn-sm">刪除</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </main>
+</body>
+</html>
