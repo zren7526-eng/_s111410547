@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevConnect 開發者社群</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans p-6">
+
+    <div class="max-w-2xl mx-auto">
+        <header class="mb-8 text-center relative">
+            <h1 class="text-4xl font-bold text-blue-600 mb-2">DevConnect</h1>
+            <p class="text-gray-500">分享你的開發日常與學習筆記</p>
+            
+            <div id="userInfo" class="hidden absolute top-0 right-0 mt-2">
+                <span id="currentUserDisplay" class="font-bold mr-2 text-blue-600"></span>
+                <button onclick="logout()" class="text-sm bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 shadow transition">登出</button>
+            </div>
+        </header>
+
+        <div id="authSection" class="bg-white p-8 rounded-lg shadow-md mb-8 max-w-md mx-auto border-t-4 border-blue-500">
+            <h2 class="text-2xl font-bold mb-6 text-center">會員登入 / 註冊</h2>
+            <input type="text" id="authUsername" placeholder="輸入帳號" class="w-full mb-4 p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50">
+            <input type="password" id="authPassword" placeholder="輸入密碼" class="w-full mb-6 p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50">
+            
+            <div class="flex gap-3">
+                <button onclick="login()" class="w-1/2 bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 transition shadow">登入</button>
+                <button onclick="register()" class="w-1/2 bg-green-500 text-white font-bold py-2 rounded hover:bg-green-600 transition shadow">註冊</button>
+            </div>
+            <p id="authMessage" class="text-center text-sm mt-4 font-bold"></p>
+        </div>
+
+        <div id="mainSection" class="hidden">
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8 border border-gray-200">
+                <textarea id="postContent" rows="3" placeholder="今天寫了什麼有趣的程式？ (試著輸入包含 node 或 ai 的字眼)" class="w-full mb-3 p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50"></textarea>
+                <button onclick="submitPost()" class="w-full bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 transition shadow">發布貼文</button>
+            </div>
+
+            <div id="feed" class="space-y-4">
+                <p class="text-center text-gray-500">動態牆載入中...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = localStorage.getItem('devconnect_username');
+
+        window.onload = () => {
+            if (currentUser) {
+                showMainApp(currentUser);
+            }
+        };
+
+        // ==========================================
+        // 1. 身分驗證 (登入/註冊/登出)
+        // ==========================================
+        async function register() {
+            const username = document.getElementById('authUsername').value;
+            const password = document.getElementById('authPassword').value;
+            const msgEl = document.getElementById('authMessage');
+
+            if (!username || !password) return msgEl.innerText = '請輸入帳號與密碼！';
+            msgEl.innerText = '註冊中...';
+
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    msgEl.className = 'text-center text-sm mt-4 font-bold text-green-600';
+                    msgEl.innerText = '✅ 註冊成功！請點擊左側按鈕登入。';
+                } else {
+                    msgEl.className = 'text-center text-sm mt-4 font-bold text-red-500';
+                    msgEl.innerText = `❌ ${data.error}`;
+                }
+            } catch (e) {
+                msgEl.innerText = '伺服器連線錯誤';
+            }
+        }
+
+        async function login() {
+            const username = document.getElementById('authUsername').value;
+            const password = document.getElementById('authPassword').value;
+            const msgEl = document.getElementById('authMessage');
+
+            if (!username || !password) return msgEl.innerText = '請輸入帳號與密碼！';
+            msgEl.innerText = '登入中...';
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    localStorage.setItem('devconnect_username', data.username);
+                    currentUser = data.username;
+                    showMainApp(currentUser);
+                } else {
+                    msgEl.className = 'text-center text-sm mt-4 font-bold text-red-500';
+                    msgEl.innerText = `❌ ${data.error}`;
+                }
+            } catch (e) {
+                msgEl.innerText = '伺服器連線錯誤';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('devconnect_username');
+            currentUser = null;
+            document.getElementById('authSection').classList.remove('hidden');
+            document.getElementById('mainSection').classList.add('hidden');
+            document.getElementById('userInfo').classList.add('hidden');
+            document.getElementById('authUsername').value = '';
+            document.getElementById('authPassword').value = '';
+            document.getElementById('authMessage').innerText = '';
+        }
+
+        function showMainApp(username) {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('mainSection').classList.remove('hidden');
+            document.getElementById('userInfo').classList.remove('hidden');
+            document.getElementById('currentUserDisplay').innerText = `你好，${username}`;
+            fetchPosts(); 
+        }
+
+        // ==========================================
+        // 2. 貼文與互動 (發文/按讚/留言/刪除)
+        // ==========================================
+        async function fetchPosts() {
+            try {
+                const response = await fetch('/api/posts');
+                const posts = await response.json();
+                const feedDiv = document.getElementById('feed');
+                feedDiv.innerHTML = ''; 
+
+                posts.forEach(post => {
+                    const tagsHtml = post.tags ? post.tags.split(',').map(tag => 
+                        `<span class="text-xs text-blue-800 bg-blue-100 border border-blue-200 px-2 py-1 rounded-full mr-1">${tag.trim()}</span>`
+                    ).join('') : '';
+
+                    const commentsHtml = post.comments.map(c => `
+                        <div class="bg-gray-50 p-2 rounded text-sm mb-1 border-l-2 border-gray-300">
+                            <span class="font-bold text-gray-700">${c.username}:</span>
+                            <span class="text-gray-600">${c.content}</span>
+                        </div>
+                    `).join('');
+
+                    // ✨ 核心判斷：如果是作者本人，就顯示刪除按鈕
+                    const deleteBtnHtml = (post.username === currentUser) 
+                        ? `<button onclick="deletePost(${post.id})" class="text-xs text-red-400 hover:text-red-600 transition ml-3 font-bold border border-red-200 px-2 py-1 rounded">🗑️ 刪除</button>` 
+                        : '';
+
+                    const postCard = `
+                        <div class="bg-white p-5 rounded-lg shadow border-l-4 border-blue-500 mb-4 hover:shadow-lg transition">
+                            <div class="flex justify-between items-center mb-3">
+                                <div>
+                                    <h3 class="font-bold text-lg text-gray-800 inline-block">${post.username}</h3>
+                                    ${deleteBtnHtml}
+                                </div>
+                                <span class="text-xs text-gray-400">${new Date(post.created_at).toLocaleString()}</span>
+                            </div>
+                            <p class="mb-4 text-gray-700">${post.content}</p>
+                            <div class="mb-4">${tagsHtml}</div>
+                            
+                            <div class="flex justify-end mb-2">
+                                <button onclick="likePost(${post.id})" class="flex items-center text-gray-500 hover:text-red-500 transition font-bold">
+                                    ❤️ <span class="ml-1">${post.like_count}</span>
+                                </button>
+                            </div>
+
+                            <div class="border-t pt-3 mt-2">
+                                <div class="mb-2 max-h-40 overflow-y-auto">${commentsHtml}</div>
+                                <div class="flex gap-2">
+                                    <input type="text" id="commentInput-${post.id}" placeholder="寫下留言..." class="flex-1 p-2 text-sm border rounded bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-400">
+                                    <button onclick="submitComment(${post.id})" class="bg-blue-500 text-white px-3 py-1 text-sm rounded hover:bg-blue-600 transition">留言</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    feedDiv.innerHTML += postCard;
+                });
+            } catch (error) {
+                console.error('讀取貼文失敗', error);
+            }
+        }
+
+        async function submitPost() {
+            const content = document.getElementById('postContent').value;
+            if (!content) return alert('請輸入貼文內容！');
+
+            try {
+                const response = await fetch('/api/posts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser, content }) 
+                });
+                if (response.ok) {
+                    document.getElementById('postContent').value = ''; 
+                    fetchPosts(); 
+                }
+            } catch (error) {
+                console.error('發文發生錯誤', error);
+            }
+        }
+
+        async function likePost(postId) {
+            try {
+                await fetch(`/api/posts/${postId}/like`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser }) 
+                });
+                fetchPosts(); 
+            } catch (error) {
+                console.error('按讚發生錯誤', error);
+            }
+        }
+
+        async function submitComment(postId) {
+            if (!currentUser) return alert('請先登入才能留言喔！');
+            
+            const inputEl = document.getElementById(`commentInput-${postId}`);
+            const content = inputEl.value;
+            
+            if (!content) return alert('請輸入留言內容！');
+
+            try {
+                await fetch(`/api/posts/${postId}/comments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser, content }) 
+                });
+                fetchPosts(); 
+            } catch (error) {
+                console.error('留言發生錯誤', error);
+            }
+        }
+
+        // ✨ 刪除貼文功能
+        async function deletePost(postId) {
+            if (!confirm('確定要刪除這篇貼文嗎？刪除後無法恢復喔！')) return;
+
+            try {
+                const response = await fetch(`/api/posts/${postId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser })
+                });
+
+                if (response.ok) {
+                    fetchPosts(); 
+                } else {
+                    const data = await response.json();
+                    alert(data.error); 
+                }
+            } catch (error) {
+                console.error('刪除發生錯誤', error);
+            }
+        }
+    </script>
+</body>
+</html>

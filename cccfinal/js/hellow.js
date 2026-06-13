@@ -1,0 +1,1 @@
+console.log('hellow 你好')
